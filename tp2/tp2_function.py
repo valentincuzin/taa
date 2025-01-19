@@ -23,7 +23,7 @@ def get_tfidf(corpus):
     return tfidf, tfidf_dict
 
 def encode_tfidf(sentence: str, tfidf_dict: dict, vector_size: int):
-	vec = np.zeros(vector_size) # potientiellement de la merde
+	vec = np.zeros(vector_size)
 	for idx, word in enumerate(sentence.split(" ")):
 		try:
 			if idx >= vector_size:
@@ -50,29 +50,38 @@ def run_model(data, labels, base_estimator):
     for key, value in base_estimator.items():
         print("##################", key, "##################")
         moc = fit_predict_custom(X_train, y_train, X_test, value, MultiOutputClassifier)
-        chain = fit_predict_custom(
-            X_train,
-            y_train,
-            X_test,
-            value,
-            ClassifierChain,
-            order="random",
-            random_state=42,
-        ) # TODO pour simuler Ensemble classifierChain, je le fait x fois puis je fais la moyenne de mes scores
+        chains = []
+        for x in range(2):
+            chains.append(fit_predict_custom(
+                X_train,
+                y_train,
+                X_test,
+                value,
+                ClassifierChain,
+                order="random",
+                random_state=42,
+            ))
 
         print(
             "----------MultiOutputClassifier----------",
         )
-        print(f1_score(y_test, moc, average="micro"))
-        print(f1_score(y_test, moc, average="macro"))
-        print(zero_one_loss(y_test, moc))
+        print('f1 micro', f1_score(y_test, moc, average="micro"))
+        print('f1 macro', f1_score(y_test, moc, average="macro"))
+        print('0/1 loss', zero_one_loss(y_test, moc))
 
         print(
             "----------ClassifierChain----------",
         )
-        print(f1_score(y_test, chain, average="micro"))
-        print(f1_score(y_test, chain, average="macro"))
-        print(zero_one_loss(y_test, chain))
+        f1_score_micro = []
+        f1_score_macro = []
+        zero_one_losses = []
+        for chain in chains:
+            f1_score_micro.append(f1_score(y_test, chain, average="micro"))
+            f1_score_macro.append(f1_score(y_test, chain, average="macro"))
+            zero_one_losses.append(zero_one_loss(y_test, chain))
+        print('f1 micro', np.mean(f1_score_micro))
+        print('f1 macro', np.mean(f1_score_macro))
+        print('0/1 loss', np.mean(zero_one_losses))
 
 def plot_word_vec(model, word, topn=5):	
 	final_tag = [(word, 1)]
