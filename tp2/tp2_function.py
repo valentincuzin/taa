@@ -59,7 +59,7 @@ def run_model(data, labels, base_estimator):
                 value,
                 ClassifierChain,
                 order="random",
-                random_state=42,
+                random_state=x,
             ))
 
         print(
@@ -127,6 +127,6 @@ def encode_sentence2(sentence: str, model):
             nb_word += 1
         except:
             pass
-    nbword = 1 if nb_word == 0 else nb_word
+    nb_word = 1 if nb_word == 0 else nb_word
     vec = vec / nb_word
     return vec.tolist()
