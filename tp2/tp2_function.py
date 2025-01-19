@@ -1,4 +1,6 @@
+from matplotlib import pyplot as plt
 import numpy as np
+import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.multioutput import MultiOutputClassifier, ClassifierChain
 from sklearn.metrics import f1_score, zero_one_loss
@@ -21,7 +23,7 @@ def get_tfidf(corpus):
     return tfidf, tfidf_dict
 
 def encode_tfidf(sentence: str, tfidf_dict: dict, vector_size: int):
-	vec = np.zeros(vector_size)
+	vec = np.zeros(vector_size) # potientiellement de la merde
 	for idx, word in enumerate(sentence.split(" ")):
 		try:
 			if idx >= vector_size:
@@ -56,7 +58,7 @@ def run_model(data, labels, base_estimator):
             ClassifierChain,
             order="random",
             random_state=42,
-        )
+        ) # TODO pour simuler Ensemble classifierChain, je le fait x fois puis je fais la moyenne de mes scores
 
         print(
             "----------MultiOutputClassifier----------",
@@ -71,7 +73,29 @@ def run_model(data, labels, base_estimator):
         print(f1_score(y_test, chain, average="micro"))
         print(f1_score(y_test, chain, average="macro"))
         print(zero_one_loss(y_test, chain))
-        
+
+def plot_word_vec(model, word, topn=5):	
+	final_tag = [(word, 1)]
+	total_encode = []
+	final_tag.extend(model.wv.most_similar(positive=word, topn=topn))
+	for tag in final_tag:
+		try:
+			total_encode.append(model.wv[tag[0]])
+		except Exception as e:
+			print(str(e))
+	total_encode = pd.DataFrame(total_encode)
+
+	fig, ax = plt.subplots()
+	ax.quiver([0 for _ in range(len(total_encode))], [0 for _ in range(len(total_encode))], total_encode[0], total_encode[1], angles='xy', scale_units='xy', scale=1)
+
+	# Ajouter les labels
+	for i, tag in enumerate(final_tag):
+		ax.annotate(tag[0], (total_encode[0][i], total_encode[1][i]))
+	# Définir les limites du plot pour inclure toutes les flèches
+	ax.set_xlim([min(total_encode[0]) - 1, max(total_encode[0]) + 1])
+	ax.set_ylim([min(total_encode[1]) - 1, max(total_encode[1]) + 1])
+	plt.show()
+
 def encode_sentence(sentence: str, model, tfidf_dict):
     vec = np.zeros(model.vector_size)
     for word in sentence.split(" "):
@@ -82,4 +106,18 @@ def encode_sentence(sentence: str, model, tfidf_dict):
                 vec += model.wv[word]
         except:
             pass
+    return vec.tolist()
+
+
+def encode_sentence2(sentence: str, model):
+    vec = np.zeros(model.vector_size)
+    nb_word = 0
+    for word in sentence.split(" "):
+        try:
+            vec += model.wv[word]
+            nb_word += 1
+        except:
+            pass
+    nbword = 1 if nb_word == 0 else nb_word
+    vec = vec / nb_word
     return vec.tolist()
